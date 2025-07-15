@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "527633615990",
+    "project_id": "fixmystreet-lagos",
+    "storage_bucket": "fixmystreet-lagos.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:527633615990:android:6a9afab847a5ae725ba357",
+        "android_client_info": {
+          "package_name": "com.example.fix_my_street_lagos"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBUQWjjhLfoRk_t5lSyOxjfZDBajQWZekM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
