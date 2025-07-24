@@ -1,31 +1,21 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_storage/firebase_storage.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:geolocator/geolocator.dart';
-// import 'package:flutter/foundation.dart';  // for kIsWeb
-// import 'package:permission_handler/permission_handler.dart';
 import 'dart:io';
 
-// Firebase Options - Replace with your project config
-class DefaultFirebaseOptions {
-  static FirebaseOptions get currentPlatform {
-    return const FirebaseOptions(
-      apiKey: 'AIzaSyD8-tonJqJa0On6yXU_hYZRMEpRQtp707I',
-      appId: '1:527633615990:web:be667d61ecad8e5f5ba357',
-      messagingSenderId: '527633615990',
-      projectId: 'fixmystreet-lagos',
-      storageBucket: 'fixmystreet-lagos.firebasestorage.app',
-      authDomain: 'fixmystreet-lagos.firebaseapp.com', // Added missing authDomain
-    );
-  }
-}
+// Supabase Configuration - Replace with your project details
+const String supabaseUrl = 'https://ujwcfccttyjkwgembffb.supabase.co';
+const String supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVqd2NmY2N0dHlqa3dnZW1iZmZiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI5NzY0NzgsImV4cCI6MjA2ODU1MjQ3OH0.4ZuPeVeIQGF1_nOqCI8OqEklVssNoTL0mt7PuzoBWac';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  
+  await Supabase.initialize(
+    url: supabaseUrl,
+    anonKey: supabaseAnonKey,
+  );
+  
   runApp(FixMyStreetApp());
 }
 
@@ -51,10 +41,10 @@ class FixMyStreetApp extends StatelessWidget {
 class AuthWrapper extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder<User?>(
-      stream: FirebaseAuth.instance.authStateChanges(),
+    return StreamBuilder<AuthState>(
+      stream: Supabase.instance.client.auth.onAuthStateChange,
       builder: (context, snapshot) {
-        if (snapshot.hasData) {
+        if (snapshot.hasData && snapshot.data?.session != null) {
           return HomePage();
         }
         return LoginPage();
@@ -69,10 +59,10 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
-  final TextEditingController _phoneController = TextEditingController();
-  final TextEditingController _smsController = TextEditingController();
-  String _verificationId = '';
-  bool _codeSent = false;
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+  final TextEditingController _nameController = TextEditingController();
+  bool _isLogin = true;
   bool _loading = false;
 
   @override
@@ -104,50 +94,60 @@ class _LoginPageState extends State<LoginPage> {
                 ),
                 child: Column(
                   children: [
-                    if (!_codeSent) ...[
+                    Text(
+                      _isLogin ? 'Sign In' : 'Sign Up',
+                      style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                    ),
+                    SizedBox(height: 20),
+                    if (!_isLogin) ...[
                       TextField(
-                        controller: _phoneController,
+                        controller: _nameController,
                         decoration: InputDecoration(
-                          labelText: 'Phone Number',
-                          hintText: '+234xxxxxxxxxx',
-                          prefixIcon: Icon(Icons.phone),
-                        ),
-                        keyboardType: TextInputType.phone,
-                      ),
-                      SizedBox(height: 20),
-                      ElevatedButton(
-                        onPressed: _loading ? null : _verifyPhone,
-                        child: _loading ? CircularProgressIndicator() : Text('Send Code'),
-                        style: ElevatedButton.styleFrom(
-                          minimumSize: Size(double.infinity, 50),
+                          labelText: 'Full Name',
+                          prefixIcon: Icon(Icons.person),
+                          border: OutlineInputBorder(),
                         ),
                       ),
-                    ] else ...[
-                      TextField(
-                        controller: _smsController,
-                        decoration: InputDecoration(
-                          labelText: 'Verification Code',
-                          prefixIcon: Icon(Icons.sms),
-                        ),
-                        keyboardType: TextInputType.number,
-                      ),
-                      SizedBox(height: 20),
-                      ElevatedButton(
-                        onPressed: _loading ? null : _verifyCode,
-                        child: _loading ? CircularProgressIndicator() : Text('Verify'),
-                        style: ElevatedButton.styleFrom(
-                          minimumSize: Size(double.infinity, 50),
-                        ),
-                      ),
-                      TextButton(
-                        onPressed: () => setState(() {
-                          _codeSent = false;
-                          _phoneController.clear();
-                          _smsController.clear();
-                        }),
-                        child: Text('Change Phone Number'),
-                      ),
+                      SizedBox(height: 16),
                     ],
+                    TextField(
+                      controller: _emailController,
+                      decoration: InputDecoration(
+                        labelText: 'Email',
+                        prefixIcon: Icon(Icons.email),
+                        border: OutlineInputBorder(),
+                      ),
+                      keyboardType: TextInputType.emailAddress,
+                    ),
+                    SizedBox(height: 16),
+                    TextField(
+                      controller: _passwordController,
+                      decoration: InputDecoration(
+                        labelText: 'Password',
+                        prefixIcon: Icon(Icons.lock),
+                        border: OutlineInputBorder(),
+                      ),
+                      obscureText: true,
+                    ),
+                    SizedBox(height: 20),
+                    ElevatedButton(
+                      onPressed: _loading ? null : _authenticate,
+                      child: _loading 
+                          ? CircularProgressIndicator() 
+                          : Text(_isLogin ? 'Sign In' : 'Sign Up'),
+                      style: ElevatedButton.styleFrom(
+                        minimumSize: Size(double.infinity, 50),
+                      ),
+                    ),
+                    SizedBox(height: 10),
+                    TextButton(
+                      onPressed: () => setState(() => _isLogin = !_isLogin),
+                      child: Text(
+                        _isLogin 
+                            ? 'Don\'t have an account? Sign Up' 
+                            : 'Already have an account? Sign In',
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -158,180 +158,71 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
-// Updated authentication methods in _LoginPageState
-
-void _verifyPhone() async {
-  if (_phoneController.text.trim().isEmpty) {
-    _showError('Please enter a phone number');
-    return;
-  }
-
-  // Format phone number for Nigeria
-  String phoneNumber = _formatPhoneNumber(_phoneController.text.trim());
-  
-  setState(() => _loading = true);
-
-  try {
-    await FirebaseAuth.instance.verifyPhoneNumber(
-      phoneNumber: phoneNumber,
-      timeout: Duration(seconds: 60),
-      verificationCompleted: (PhoneAuthCredential credential) async {
-        try {
-          await FirebaseAuth.instance.signInWithCredential(credential);
-          setState(() => _loading = false);
-        } catch (e) {
-          setState(() => _loading = false);
-          _showError('Auto sign-in failed: ${e.toString()}');
-        }
-      },
-      verificationFailed: (FirebaseAuthException e) {
-        setState(() => _loading = false);
-        _handleVerificationError(e);
-      },
-      codeSent: (String verificationId, int? resendToken) {
-        setState(() {
-          _verificationId = verificationId;
-          _codeSent = true;
-          _loading = false;
-        });
-        _showSuccess('Verification code sent to $phoneNumber');
-      },
-      codeAutoRetrievalTimeout: (String verificationId) {
-        _verificationId = verificationId;
-        if (mounted) setState(() => _loading = false);
-      },
-    );
-  } catch (e) {
-    setState(() => _loading = false);
-    _showError('Phone verification setup failed. Please try again.');
-    print('Phone verification error: $e');
-  }
-}
-
-String _formatPhoneNumber(String phoneNumber) {
-  // Remove all non-digit characters except +
-  String cleaned = phoneNumber.replaceAll(RegExp(r'[^\d+]'), '');
-  
-  if (cleaned.startsWith('+234')) {
-    return cleaned;
-  } else if (cleaned.startsWith('234')) {
-    return '+$cleaned';
-  } else if (cleaned.startsWith('0')) {
-    return '+234${cleaned.substring(1)}';
-  } else if (cleaned.length == 10) {
-    return '+234$cleaned';
-  } else {
-    return '+234$cleaned';
-  }
-}
-
-void _handleVerificationError(FirebaseAuthException e) {
-  String errorMessage;
-  switch (e.code) {
-    case 'invalid-phone-number':
-      errorMessage = 'Please enter a valid Nigerian phone number';
-      break;
-    case 'too-many-requests':
-      errorMessage = 'Too many attempts. Please try again in a few minutes';
-      break;
-    case 'quota-exceeded':
-      errorMessage = 'SMS quota exceeded. Please try again later';
-      break;
-    case 'captcha-check-failed':
-      errorMessage = 'reCAPTCHA verification failed. Please refresh and try again';
-      break;
-    case 'missing-phone-number':
-      errorMessage = 'Phone number is required';
-      break;
-    default:
-      errorMessage = 'Verification failed: ${e.message ?? 'Unknown error'}';
-      print('Firebase Auth Error Code: ${e.code}');
-      print('Firebase Auth Error Message: ${e.message}');
-  }
-  _showError(errorMessage);
-}
-
-void _verifyCode() async {
-    String code = _smsController.text.trim();
-    if (code.isEmpty) {
-      _showError('Please enter the 6-digit verification code');
+  void _authenticate() async {
+    final email = _emailController.text.trim();
+    final password = _passwordController.text.trim();
+    final name = _nameController.text.trim();
+    
+    if (email.isEmpty || password.isEmpty) {
+      _showError('Please fill in all fields');
       return;
     }
-    
-    if (code.length != 6) {
-      _showError('Verification code must be 6 digits');
+
+    if (!_isLogin && name.isEmpty) {
+      _showError('Please enter your full name');
       return;
     }
 
     setState(() => _loading = true);
-    
-    try {
-      PhoneAuthCredential credential = PhoneAuthProvider.credential(
-        verificationId: _verificationId,
-        smsCode: code,
-      );
-      
-      UserCredential result = await FirebaseAuth.instance.signInWithCredential(credential);
-      
-      if (result.user != null) {
-        // Successfully signed in
-        setState(() => _loading = false);
-      }
-    } catch (e) {
-      setState(() => _loading = false);
-      
-      if (e is FirebaseAuthException) {
-        switch (e.code) {
-          case 'invalid-verification-code':
-            _showError('Invalid verification code. Please check and try again');
-            break;
-          case 'session-expired':
-          case 'code-expired':
-            _showError('Code expired. Please request a new verification code');
-            _resetToPhoneInput();
-            break;
-          default:
-            _showError('Verification failed: ${e.message ?? 'Unknown error'}');
-        }
-      } else {
-        _showError('Verification failed. Please try again');
-      }
-      print('Code verification error: $e');
-    }
-}
 
-  void _resetToPhoneInput() {
-    setState(() {
-      _codeSent = false;
-      _smsController.clear();
-    });
+    try {
+      if (_isLogin) {
+        // Sign in existing user
+        await Supabase.instance.client.auth.signInWithPassword(
+          email: email,
+          password: password,
+        );
+      } else {
+        // Sign up new user
+        final response = await Supabase.instance.client.auth.signUp(
+          email: email,
+          password: password,
+          data: {'full_name': name},
+        );
+        
+        if (response.user?.emailConfirmedAt == null) {
+          _showSuccess('Please check your email to confirm your account');
+          setState(() => _isLogin = true);
+        }
+      }
+      
+      setState(() => _loading = false);
+    } catch (error) {
+      setState(() => _loading = false);
+      _showError(error.toString());
+    }
   }
 
   void _showError(String message) {
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(message),
-          backgroundColor: Colors.red,
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
-    }
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.red,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
   }
 
   void _showSuccess(String message) {
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(message),
-          backgroundColor: Colors.green,
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
-    }
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.green,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
   }
 }
-
 
 class HomePage extends StatefulWidget {
   @override
@@ -350,7 +241,7 @@ class _HomePageState extends State<HomePage> {
         actions: [
           IconButton(
             icon: Icon(Icons.logout),
-            onPressed: () => FirebaseAuth.instance.signOut(),
+            onPressed: () => Supabase.instance.client.auth.signOut(),
           ),
         ],
       ),
@@ -417,34 +308,34 @@ class DashboardScreen extends StatelessWidget {
           ),
           SizedBox(height: 8),
           Expanded(
-            child: StreamBuilder<QuerySnapshot>(
-              stream: FirebaseFirestore.instance
-                  .collection('reports')
-                  .orderBy('createdAt', descending: true)
-                  .limit(10)
-                  .snapshots(),
+            child: StreamBuilder<List<Map<String, dynamic>>>(
+              stream: Supabase.instance.client
+                  .from('reports')
+                  .stream(primaryKey: ['id'])
+                  .order('created_at', ascending: false)
+                  .limit(10),
               builder: (context, snapshot) {
-                if (!snapshot.hasData) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
                   return Center(child: CircularProgressIndicator());
                 }
 
-                if (snapshot.data!.docs.isEmpty) {
+                if (!snapshot.hasData || snapshot.data!.isEmpty) {
                   return Center(
                     child: Text('No reports yet. Be the first to report an issue!'),
                   );
                 }
 
                 return ListView.builder(
-                  itemCount: snapshot.data!.docs.length,
+                  itemCount: snapshot.data!.length,
                   itemBuilder: (context, index) {
-                    var report = snapshot.data!.docs[index];
+                    var report = snapshot.data![index];
                     return Card(
                       margin: EdgeInsets.only(bottom: 8),
                       child: ListTile(
                         leading: _getCategoryIcon(report['category']),
-                        title: Text(report['title']),
-                        subtitle: Text(report['description']),
-                        trailing: _getStatusChip(report['status']),
+                        title: Text(report['title'] ?? ''),
+                        subtitle: Text(report['description'] ?? ''),
+                        trailing: _getStatusChip(report['status'] ?? 'submitted'),
                       ),
                     );
                   },
@@ -457,10 +348,10 @@ class DashboardScreen extends StatelessWidget {
     );
   }
 
-  Widget _getCategoryIcon(String category) {
+  Widget _getCategoryIcon(String? category) {
     IconData icon;
     Color color;
-    switch (category.toLowerCase()) {
+    switch (category?.toLowerCase()) {
       case 'roads':
         icon = Icons.construction;
         color = Colors.orange;
@@ -582,11 +473,31 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
             ),
             if (_image != null) ...[
               SizedBox(height: 16),
-              Image.file(_image!, height: 200, fit: BoxFit.cover),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: Image.file(_image!, height: 200, fit: BoxFit.cover),
+              ),
             ],
             if (_location != null) ...[
               SizedBox(height: 16),
-              Text('Location: ${_location!.latitude.toStringAsFixed(4)}, ${_location!.longitude.toStringAsFixed(4)}'),
+              Container(
+                padding: EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.green[50],
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.green[200]!),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.location_on, color: Colors.green),
+                    SizedBox(width: 8),
+                    Text(
+                      'Location captured successfully!',
+                      style: TextStyle(color: Colors.green[700]),
+                    ),
+                  ],
+                ),
+              ),
             ],
             SizedBox(height: 24),
             ElevatedButton(
@@ -653,29 +564,39 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
 
     try {
       String? imageUrl;
+      
+      // Upload image if exists
       if (_image != null) {
-        final storageRef = FirebaseStorage.instance
-            .ref()
-            .child('report_images')
-            .child('${DateTime.now().millisecondsSinceEpoch}.jpg');
-        await storageRef.putFile(_image!);
-        imageUrl = await storageRef.getDownloadURL();
+        final bytes = await _image!.readAsBytes();
+        final fileName = 'report_${DateTime.now().millisecondsSinceEpoch}.jpg';
+        
+        await Supabase.instance.client.storage
+            .from('report-images')
+            .uploadBinary(fileName, bytes);
+        
+        imageUrl = Supabase.instance.client.storage
+            .from('report-images')
+            .getPublicUrl(fileName);
       }
 
-      await FirebaseFirestore.instance.collection('reports').add({
+      // Insert report into database
+      await Supabase.instance.client.from('reports').insert({
         'title': _titleController.text,
         'description': _descriptionController.text,
         'category': _selectedCategory,
-        'imageUrl': imageUrl,
+        'image_url': imageUrl,
         'latitude': _location!.latitude,
         'longitude': _location!.longitude,
-        'userId': FirebaseAuth.instance.currentUser!.uid,
-        'status': 'Submitted',
-        'createdAt': FieldValue.serverTimestamp(),
+        'user_id': Supabase.instance.client.auth.currentUser!.id,
+        'status': 'submitted',
+        'created_at': DateTime.now().toIso8601String(),
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Report submitted successfully!')),
+        SnackBar(
+          content: Text('Report submitted successfully!'),
+          backgroundColor: Colors.green,
+        ),
       );
 
       // Clear form
@@ -699,7 +620,7 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
 class MyReportsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    final userId = FirebaseAuth.instance.currentUser!.uid;
+    final userId = Supabase.instance.client.auth.currentUser!.id;
 
     return Padding(
       padding: EdgeInsets.all(16),
@@ -712,29 +633,44 @@ class MyReportsScreen extends StatelessWidget {
           ),
           SizedBox(height: 16),
           Expanded(
-            child: StreamBuilder<QuerySnapshot>(
-              stream: FirebaseFirestore.instance
-                  .collection('reports')
-                  .where('userId', isEqualTo: userId)
-                  .orderBy('createdAt', descending: true)
-                  .snapshots(),
+            child: StreamBuilder<List<Map<String, dynamic>>>(
+              stream: Supabase.instance.client
+                  .from('reports')
+                  .stream(primaryKey: ['id'])
+                  .eq('user_id', userId)
+                  .order('created_at', ascending: false),
               builder: (context, snapshot) {
-                if (!snapshot.hasData) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
                   return Center(child: CircularProgressIndicator());
                 }
 
-                if (snapshot.data!.docs.isEmpty) {
+                if (!snapshot.hasData || snapshot.data!.isEmpty) {
                   return Center(
-                    child: Text('No reports yet. Create your first report!'),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.report_off, size: 80, color: Colors.grey),
+                        SizedBox(height: 16),
+                        Text(
+                          'No reports yet',
+                          style: TextStyle(fontSize: 18, color: Colors.grey[600]),
+                        ),
+                        Text(
+                          'Create your first report!',
+                          style: TextStyle(color: Colors.grey[500]),
+                        ),
+                      ],
+                    ),
                   );
                 }
 
                 return ListView.builder(
-                  itemCount: snapshot.data!.docs.length,
+                  itemCount: snapshot.data!.length,
                   itemBuilder: (context, index) {
-                    var report = snapshot.data!.docs[index];
+                    var report = snapshot.data![index];
                     return Card(
                       margin: EdgeInsets.only(bottom: 12),
+                      elevation: 2,
                       child: Padding(
                         padding: EdgeInsets.all(16),
                         child: Column(
@@ -743,39 +679,57 @@ class MyReportsScreen extends StatelessWidget {
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                Text(
-                                  report['title'],
-                                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                                Expanded(
+                                  child: Text(
+                                    report['title'] ?? '',
+                                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                                  ),
                                 ),
-                                _getStatusChip(report['status']),
+                                _getStatusChip(report['status'] ?? 'submitted'),
                               ],
                             ),
                             SizedBox(height: 8),
-                            Text(report['description']),
+                            Text(
+                              report['description'] ?? '',
+                              style: TextStyle(color: Colors.grey[700]),
+                            ),
                             SizedBox(height: 8),
                             Row(
                               children: [
-                                Icon(Icons.category, size: 16, color: Colors.grey),
-                                SizedBox(width: 4),
-                                Text(report['category'], style: TextStyle(color: Colors.grey)),
-                                SizedBox(width: 16),
-                                Icon(Icons.location_on, size: 16, color: Colors.grey),
+                                Icon(Icons.category, size: 16, color: Colors.grey[600]),
                                 SizedBox(width: 4),
                                 Text(
-                                  '${report['latitude'].toStringAsFixed(4)}, ${report['longitude'].toStringAsFixed(4)}',
-                                  style: TextStyle(color: Colors.grey),
+                                  report['category'] ?? '', 
+                                  style: TextStyle(color: Colors.grey[600], fontSize: 13),
+                                ),
+                                SizedBox(width: 16),
+                                Icon(Icons.access_time, size: 16, color: Colors.grey[600]),
+                                SizedBox(width: 4),
+                                Text(
+                                  _formatDate(report['created_at']),
+                                  style: TextStyle(color: Colors.grey[600], fontSize: 13),
                                 ),
                               ],
                             ),
-                            if (report['imageUrl'] != null) ...[
+                            if (report['image_url'] != null) ...[
                               SizedBox(height: 12),
                               ClipRRect(
                                 borderRadius: BorderRadius.circular(8),
                                 child: Image.network(
-                                  report['imageUrl'],
+                                  report['image_url'],
                                   height: 150,
                                   width: double.infinity,
                                   fit: BoxFit.cover,
+                                  errorBuilder: (context, error, stackTrace) {
+                                    return Container(
+                                      height: 150,
+                                      color: Colors.grey[300],
+                                      child: Center(
+                                        child: Icon(Icons.image_not_supported, 
+                                             color: Colors.grey[600]),
+                                      ),
+                                    );
+                                  },
                                 ),
                               ),
                             ],
@@ -812,5 +766,15 @@ class MyReportsScreen extends StatelessWidget {
       label: Text(status, style: TextStyle(color: Colors.white, fontSize: 12)),
       backgroundColor: color,
     );
+  }
+
+  String _formatDate(String? dateString) {
+    if (dateString == null) return '';
+    try {
+      final date = DateTime.parse(dateString);
+      return '${date.day}/${date.month}/${date.year}';
+    } catch (e) {
+      return '';
+    }
   }
 }
