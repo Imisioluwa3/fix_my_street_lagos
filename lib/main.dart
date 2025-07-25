@@ -2,18 +2,20 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'dart:io';
-
-// Supabase Configuration - Replace with your project details
-const String supabaseUrl = 'https://ujwcfccttyjkwgembffb.supabase.co';
-const String supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVqd2NmY2N0dHlqa3dnZW1iZmZiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI5NzY0NzgsImV4cCI6MjA2ODU1MjQ3OH0.4ZuPeVeIQGF1_nOqCI8OqEklVssNoTL0mt7PuzoBWac';
+import 'dart:typed_data';
+import 'package:flutter/foundation.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
+  // Load environment variables
+  await dotenv.load(fileName: ".env");
+  
   await Supabase.initialize(
-    url: supabaseUrl,
-    anonKey: supabaseAnonKey,
+    url: dotenv.env['SUPABASE_URL'] ?? '',
+    anonKey: dotenv.env['SUPABASE_ANON_KEY'] ?? '',
   );
   
   runApp(FixMyStreetApp());
@@ -31,9 +33,193 @@ class FixMyStreetApp extends StatelessWidget {
         appBarTheme: AppBarTheme(
           backgroundColor: Color(0xFF008751),
           foregroundColor: Colors.white,
+          elevation: 0,
+        ),
+        elevatedButtonTheme: ElevatedButtonThemeData(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Color(0xFF008751),
+            foregroundColor: Colors.white,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        ),
+        cardTheme: CardThemeData(
+          elevation: 2,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
         ),
       ),
-      home: AuthWrapper(),
+      home: SplashScreen(),
+    );
+  }
+}
+
+class SplashScreen extends StatefulWidget {
+  @override
+  _SplashScreenState createState() => _SplashScreenState();
+}
+
+class _SplashScreenState extends State<SplashScreen> 
+    with SingleTickerProviderStateMixin {
+  late AnimationController _animationController;
+  late Animation<double> _fadeAnimation;
+  late Animation<double> _scaleAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _animationController = AnimationController(
+      duration: Duration(seconds: 2),
+      vsync: this,
+    );
+
+    _fadeAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: _animationController,
+      curve: Curves.easeIn,
+    ));
+
+    _scaleAnimation = Tween<double>(
+      begin: 0.5,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: _animationController,
+      curve: Curves.elasticOut,
+    ));
+
+    _animationController.forward();
+    
+    // Navigate after 3 seconds
+    Future.delayed(Duration(seconds: 3), () {
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (_) => AuthWrapper()),
+      );
+    });
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final screenSize = MediaQuery.of(context).size;
+    final isTablet = screenSize.width > 600;
+    final isMobile = screenSize.width <= 600;
+    
+    return Scaffold(
+      body: Container(
+        width: double.infinity,
+        height: double.infinity,
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Color(0xFF008751),
+              Color(0xFF00A862),
+              Color(0xFF00C073),
+            ],
+          ),
+        ),
+        child: SafeArea(
+          child: AnimatedBuilder(
+            animation: _animationController,
+            builder: (context, child) {
+              return FadeTransition(
+                opacity: _fadeAnimation,
+                child: ScaleTransition(
+                  scale: _scaleAnimation,
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      // Logo/Icon Container
+                      Container(
+                        width: isTablet ? 180 : 120,
+                        height: isTablet ? 180 : 120,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black26,
+                              blurRadius: 20,
+                              offset: Offset(0, 10),
+                            ),
+                          ],
+                        ),
+                        child: Icon(
+                          Icons.location_city,
+                          size: isTablet ? 80 : 60,
+                          color: Color(0xFF008751),
+                        ),
+                      ),
+                      SizedBox(height: isTablet ? 40 : 30),
+                      
+                      // App Name
+                      Text(
+                        'FixMyStreet',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: isTablet ? 36 : 28,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 1.2,
+                        ),
+                      ),
+                      
+                      Text(
+                        'Lagos',
+                        style: TextStyle(
+                          color: Colors.white70,
+                          fontSize: isTablet ? 24 : 18,
+                          fontWeight: FontWeight.w300,
+                          letterSpacing: 2.0,
+                        ),
+                      ),
+                      
+                      SizedBox(height: isTablet ? 20 : 15),
+                      
+                      // Tagline
+                      Padding(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: isTablet ? 80 : 40,
+                        ),
+                        child: Text(
+                          'Building Better Communities Together',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: Colors.white70,
+                            fontSize: isTablet ? 18 : 16,
+                            fontWeight: FontWeight.w400,
+                          ),
+                        ),
+                      ),
+                      
+                      SizedBox(height: isTablet ? 60 : 40),
+                      
+                      // Loading indicator
+                      SizedBox(
+                        width: isTablet ? 40 : 30,
+                        height: isTablet ? 40 : 30,
+                        child: CircularProgressIndicator(
+                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                          strokeWidth: 3,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      ),
     );
   }
 }
@@ -59,148 +245,247 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
-  final TextEditingController _emailController = TextEditingController();
-  final TextEditingController _passwordController = TextEditingController();
-  final TextEditingController _nameController = TextEditingController();
-  bool _isLogin = true;
+  final TextEditingController _phoneController = TextEditingController();
+  final TextEditingController _otpController = TextEditingController();
+  bool _otpSent = false;
   bool _loading = false;
 
   @override
   Widget build(BuildContext context) {
+    final screenSize = MediaQuery.of(context).size;
+    final isTablet = screenSize.width > 600;
+    final padding = isTablet ? 40.0 : 20.0;
+    
     return Scaffold(
-      backgroundColor: Color(0xFF008751),
-      body: SafeArea(
-        child: Padding(
-          padding: EdgeInsets.all(20),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.location_city, size: 100, color: Colors.white),
-              SizedBox(height: 20),
-              Text(
-                'FixMyStreet Lagos',
-                style: TextStyle(color: Colors.white, fontSize: 28, fontWeight: FontWeight.bold),
-              ),
-              Text(
-                'Report infrastructure issues in Lagos',
-                style: TextStyle(color: Colors.white70, fontSize: 16),
-              ),
-              SizedBox(height: 40),
-              Container(
-                padding: EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(15),
-                ),
-                child: Column(
-                  children: [
-                    Text(
-                      _isLogin ? 'Sign In' : 'Sign Up',
-                      style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-                    ),
-                    SizedBox(height: 20),
-                    if (!_isLogin) ...[
-                      TextField(
-                        controller: _nameController,
-                        decoration: InputDecoration(
-                          labelText: 'Full Name',
-                          prefixIcon: Icon(Icons.person),
-                          border: OutlineInputBorder(),
-                        ),
-                      ),
-                      SizedBox(height: 16),
-                    ],
-                    TextField(
-                      controller: _emailController,
-                      decoration: InputDecoration(
-                        labelText: 'Email',
-                        prefixIcon: Icon(Icons.email),
-                        border: OutlineInputBorder(),
-                      ),
-                      keyboardType: TextInputType.emailAddress,
-                    ),
-                    SizedBox(height: 16),
-                    TextField(
-                      controller: _passwordController,
-                      decoration: InputDecoration(
-                        labelText: 'Password',
-                        prefixIcon: Icon(Icons.lock),
-                        border: OutlineInputBorder(),
-                      ),
-                      obscureText: true,
-                    ),
-                    SizedBox(height: 20),
-                    ElevatedButton(
-                      onPressed: _loading ? null : _authenticate,
-                      child: _loading 
-                          ? CircularProgressIndicator() 
-                          : Text(_isLogin ? 'Sign In' : 'Sign Up'),
-                      style: ElevatedButton.styleFrom(
-                        minimumSize: Size(double.infinity, 50),
-                      ),
-                    ),
-                    SizedBox(height: 10),
-                    TextButton(
-                      onPressed: () => setState(() => _isLogin = !_isLogin),
-                      child: Text(
-                        _isLogin 
-                            ? 'Don\'t have an account? Sign Up' 
-                            : 'Already have an account? Sign In',
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+      body: Container(
+        width: double.infinity,
+        height: double.infinity,
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Color(0xFF008751),
+              Color(0xFF00A862),
             ],
+          ),
+        ),
+        child: SafeArea(
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              return SingleChildScrollView(
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                    minHeight: constraints.maxHeight,
+                  ),
+                  child: IntrinsicHeight(
+                    child: Padding(
+                      padding: EdgeInsets.all(padding),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          // Logo Section
+                          Container(
+                            width: isTablet ? 100 : 80,
+                            height: isTablet ? 100 : 80,
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              shape: BoxShape.circle,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black26,
+                                  blurRadius: 15,
+                                  offset: Offset(0, 5),
+                                ),
+                              ],
+                            ),
+                            child: Icon(
+                              Icons.location_city,
+                              size: isTablet ? 50 : 40,
+                              color: Color(0xFF008751),
+                            ),
+                          ),
+                          
+                          SizedBox(height: isTablet ? 30 : 20),
+                          
+                          Text(
+                            'FixMyStreet Lagos',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: isTablet ? 32 : 28,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          
+                          Text(
+                            'Report infrastructure issues in Lagos',
+                            style: TextStyle(
+                              color: Colors.white70,
+                              fontSize: isTablet ? 18 : 16,
+                            ),
+                          ),
+                          
+                          SizedBox(height: isTablet ? 50 : 40),
+                          
+                          // Login Form
+                          Container(
+                            constraints: BoxConstraints(
+                              maxWidth: isTablet ? 400 : double.infinity,
+                            ),
+                            padding: EdgeInsets.all(isTablet ? 30 : 20),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(20),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black26,
+                                  blurRadius: 20,
+                                  offset: Offset(0, 10),
+                                ),
+                              ],
+                            ),
+                            child: Column(
+                              children: [
+                                if (!_otpSent) ...[
+                                  TextField(
+                                    controller: _phoneController,
+                                    decoration: InputDecoration(
+                                      labelText: 'Phone Number',
+                                      hintText: '+234xxxxxxxxxx',
+                                      prefixIcon: Icon(Icons.phone),
+                                      border: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                    ),
+                                    keyboardType: TextInputType.phone,
+                                  ),
+                                  SizedBox(height: 20),
+                                  ElevatedButton(
+                                    onPressed: _loading ? null : _sendOTP,
+                                    child: _loading 
+                                        ? CircularProgressIndicator(color: Colors.white)
+                                        : Text('Send OTP'),
+                                    style: ElevatedButton.styleFrom(
+                                      minimumSize: Size(double.infinity, 50),
+                                    ),
+                                  ),
+                                ] else ...[
+                                  TextField(
+                                    controller: _otpController,
+                                    decoration: InputDecoration(
+                                      labelText: '6-Digit OTP',
+                                      prefixIcon: Icon(Icons.sms),
+                                      border: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                    ),
+                                    keyboardType: TextInputType.number,
+                                    maxLength: 6,
+                                  ),
+                                  SizedBox(height: 20),
+                                  ElevatedButton(
+                                    onPressed: _loading ? null : _verifyOTP,
+                                    child: _loading 
+                                        ? CircularProgressIndicator(color: Colors.white)
+                                        : Text('Verify OTP'),
+                                    style: ElevatedButton.styleFrom(
+                                      minimumSize: Size(double.infinity, 50),
+                                    ),
+                                  ),
+                                  TextButton(
+                                    onPressed: () => setState(() {
+                                      _otpSent = false;
+                                      _phoneController.clear();
+                                      _otpController.clear();
+                                    }),
+                                    child: Text('Change Phone Number'),
+                                  ),
+                                ],
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            },
           ),
         ),
       ),
     );
   }
 
-  void _authenticate() async {
-    final email = _emailController.text.trim();
-    final password = _passwordController.text.trim();
-    final name = _nameController.text.trim();
+  void _sendOTP() async {
+    final phone = _formatPhoneNumber(_phoneController.text.trim());
     
-    if (email.isEmpty || password.isEmpty) {
-      _showError('Please fill in all fields');
-      return;
-    }
-
-    if (!_isLogin && name.isEmpty) {
-      _showError('Please enter your full name');
+    if (phone.isEmpty || !_isValidPhone(phone)) {
+      _showError('Please enter a valid Nigerian phone number');
       return;
     }
 
     setState(() => _loading = true);
 
     try {
-      if (_isLogin) {
-        // Sign in existing user
-        await Supabase.instance.client.auth.signInWithPassword(
-          email: email,
-          password: password,
-        );
-      } else {
-        // Sign up new user
-        final response = await Supabase.instance.client.auth.signUp(
-          email: email,
-          password: password,
-          data: {'full_name': name},
-        );
-        
-        if (response.user?.emailConfirmedAt == null) {
-          _showSuccess('Please check your email to confirm your account');
-          setState(() => _isLogin = true);
-        }
-      }
+      await Supabase.instance.client.auth.signInWithOtp(
+        phone: phone,
+      );
+      
+      setState(() {
+        _otpSent = true;
+        _loading = false;
+      });
+      
+      _showSuccess('OTP sent to $phone');
+    } catch (error) {
+      setState(() => _loading = false);
+      _showError('Failed to send OTP: ${error.toString()}');
+    }
+  }
+
+  void _verifyOTP() async {
+    final phone = _formatPhoneNumber(_phoneController.text.trim());
+    final otp = _otpController.text.trim();
+    
+    if (otp.length != 6) {
+      _showError('Please enter the 6-digit OTP');
+      return;
+    }
+
+    setState(() => _loading = true);
+
+    try {
+      await Supabase.instance.client.auth.verifyOTP(
+        phone: phone,
+        token: otp,
+        type: OtpType.sms,
+      );
       
       setState(() => _loading = false);
     } catch (error) {
       setState(() => _loading = false);
-      _showError(error.toString());
+      _showError('Invalid OTP. Please try again.');
     }
+  }
+
+  String _formatPhoneNumber(String phoneNumber) {
+    String cleaned = phoneNumber.replaceAll(RegExp(r'[^\d+]'), '');
+    
+    if (cleaned.startsWith('+234')) {
+      return cleaned;
+    } else if (cleaned.startsWith('234')) {
+      return '+$cleaned';
+    } else if (cleaned.startsWith('0')) {
+      return '+234${cleaned.substring(1)}';
+    } else if (cleaned.length == 10) {
+      return '+234$cleaned';
+    }
+    return cleaned.startsWith('+') ? cleaned : '+234$cleaned';
+  }
+
+  bool _isValidPhone(String phone) {
+    return phone.startsWith('+234') && phone.length == 14;
   }
 
   void _showError(String message) {
@@ -209,6 +494,7 @@ class _LoginPageState extends State<LoginPage> {
         content: Text(message),
         backgroundColor: Colors.red,
         behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       ),
     );
   }
@@ -219,6 +505,7 @@ class _LoginPageState extends State<LoginPage> {
         content: Text(message),
         backgroundColor: Colors.green,
         behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       ),
     );
   }
@@ -235,6 +522,9 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
+    final screenSize = MediaQuery.of(context).size;
+    final isTablet = screenSize.width > 600;
+    
     return Scaffold(
       appBar: AppBar(
         title: Text('FixMyStreet Lagos'),
@@ -264,10 +554,20 @@ class _HomePageState extends State<HomePage> {
             curve: Curves.ease,
           );
         },
+        selectedItemColor: Color(0xFF008751),
         items: [
-          BottomNavigationBarItem(icon: Icon(Icons.dashboard), label: 'Dashboard'),
-          BottomNavigationBarItem(icon: Icon(Icons.add_circle), label: 'Report'),
-          BottomNavigationBarItem(icon: Icon(Icons.list), label: 'My Reports'),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.dashboard),
+            label: 'Dashboard',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.add_circle),
+            label: 'Report',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.list),
+            label: 'My Reports',
+          ),
         ],
       ),
     );
@@ -277,34 +577,47 @@ class _HomePageState extends State<HomePage> {
 class DashboardScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
+    final screenSize = MediaQuery.of(context).size;
+    final isTablet = screenSize.width > 600;
+    final padding = isTablet ? 24.0 : 16.0;
+    
     return Padding(
-      padding: EdgeInsets.all(16),
+      padding: EdgeInsets.all(padding),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Card(
             child: Padding(
-              padding: EdgeInsets.all(16),
+              padding: EdgeInsets.all(padding),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     'Welcome to FixMyStreet Lagos',
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                      fontSize: isTablet ? 24 : 20,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   SizedBox(height: 8),
                   Text(
                     'Report infrastructure issues in your community and help build a better Lagos.',
-                    style: TextStyle(color: Colors.grey[600]),
+                    style: TextStyle(
+                      color: Colors.grey[600],
+                      fontSize: isTablet ? 16 : 14,
+                    ),
                   ),
                 ],
               ),
             ),
           ),
-          SizedBox(height: 16),
+          SizedBox(height: padding),
           Text(
             'Recent Reports',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            style: TextStyle(
+              fontSize: isTablet ? 20 : 18,
+              fontWeight: FontWeight.bold,
+            ),
           ),
           SizedBox(height: 8),
           Expanded(
@@ -321,7 +634,21 @@ class DashboardScreen extends StatelessWidget {
 
                 if (!snapshot.hasData || snapshot.data!.isEmpty) {
                   return Center(
-                    child: Text('No reports yet. Be the first to report an issue!'),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.report_off, size: 80, color: Colors.grey),
+                        SizedBox(height: 16),
+                        Text(
+                          'No reports yet',
+                          style: TextStyle(fontSize: 18, color: Colors.grey[600]),
+                        ),
+                        Text(
+                          'Be the first to report an issue!',
+                          style: TextStyle(color: Colors.grey[500]),
+                        ),
+                      ],
+                    ),
                   );
                 }
 
@@ -333,8 +660,15 @@ class DashboardScreen extends StatelessWidget {
                       margin: EdgeInsets.only(bottom: 8),
                       child: ListTile(
                         leading: _getCategoryIcon(report['category']),
-                        title: Text(report['title'] ?? ''),
-                        subtitle: Text(report['description'] ?? ''),
+                        title: Text(
+                          report['title'] ?? '',
+                          style: TextStyle(fontWeight: FontWeight.w500),
+                        ),
+                        subtitle: Text(
+                          report['description'] ?? '',
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                         trailing: _getStatusChip(report['status'] ?? 'submitted'),
                       ),
                     );
@@ -368,7 +702,10 @@ class DashboardScreen extends StatelessWidget {
         icon = Icons.report;
         color = Colors.grey;
     }
-    return CircleAvatar(backgroundColor: color, child: Icon(icon, color: Colors.white));
+    return CircleAvatar(
+      backgroundColor: color,
+      child: Icon(icon, color: Colors.white, size: 20),
+    );
   }
 
   Widget _getStatusChip(String status) {
@@ -387,7 +724,10 @@ class DashboardScreen extends StatelessWidget {
         color = Colors.grey;
     }
     return Chip(
-      label: Text(status, style: TextStyle(color: Colors.white, fontSize: 12)),
+      label: Text(
+        status,
+        style: TextStyle(color: Colors.white, fontSize: 12),
+      ),
       backgroundColor: color,
     );
   }
@@ -405,53 +745,74 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
   String _selectedCategory = 'Roads';
   List<String> _categories = ['Roads', 'Waste', 'Utilities', 'Public Facilities'];
   File? _image;
+  Uint8List? _webImage;
   Position? _location;
   bool _loading = false;
 
   @override
   Widget build(BuildContext context) {
+    final screenSize = MediaQuery.of(context).size;
+    final isTablet = screenSize.width > 600;
+    final padding = isTablet ? 24.0 : 16.0;
+    
     return Padding(
-      padding: EdgeInsets.all(16),
+      padding: EdgeInsets.all(padding),
       child: Form(
         key: _formKey,
         child: ListView(
           children: [
             Text(
               'Report an Issue',
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                fontSize: isTablet ? 28 : 24,
+                fontWeight: FontWeight.bold,
+              ),
             ),
-            SizedBox(height: 16),
+            SizedBox(height: padding),
+            
             DropdownButtonFormField<String>(
               value: _selectedCategory,
               decoration: InputDecoration(
                 labelText: 'Category',
-                border: OutlineInputBorder(),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
               ),
               items: _categories.map((category) {
                 return DropdownMenuItem(value: category, child: Text(category));
               }).toList(),
               onChanged: (value) => setState(() => _selectedCategory = value!),
             ),
-            SizedBox(height: 16),
+            
+            SizedBox(height: padding),
+            
             TextFormField(
               controller: _titleController,
               decoration: InputDecoration(
                 labelText: 'Issue Title',
-                border: OutlineInputBorder(),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
               ),
               validator: (value) => value?.isEmpty == true ? 'Please enter a title' : null,
             ),
-            SizedBox(height: 16),
+            
+            SizedBox(height: padding),
+            
             TextFormField(
               controller: _descriptionController,
               decoration: InputDecoration(
                 labelText: 'Description',
-                border: OutlineInputBorder(),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
               ),
               maxLines: 4,
               validator: (value) => value?.isEmpty == true ? 'Please enter a description' : null,
             ),
-            SizedBox(height: 16),
+            
+            SizedBox(height: padding),
+            
             Row(
               children: [
                 Expanded(
@@ -459,6 +820,9 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
                     onPressed: _pickImage,
                     icon: Icon(Icons.camera_alt),
                     label: Text('Add Photo'),
+                    style: ElevatedButton.styleFrom(
+                      minimumSize: Size(0, 50),
+                    ),
                   ),
                 ),
                 SizedBox(width: 16),
@@ -467,24 +831,33 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
                     onPressed: _getCurrentLocation,
                     icon: Icon(Icons.location_on),
                     label: Text('Get Location'),
+                    style: ElevatedButton.styleFrom(
+                      minimumSize: Size(0, 50),
+                    ),
                   ),
                 ),
               ],
             ),
-            if (_image != null) ...[
-              SizedBox(height: 16),
+            
+            if (_image != null || _webImage != null) ...[
+              SizedBox(height: padding),
               ClipRRect(
-                borderRadius: BorderRadius.circular(8),
-                child: Image.file(_image!, height: 200, fit: BoxFit.cover),
+                borderRadius: BorderRadius.circular(12),
+                child: kIsWeb && _webImage != null
+                    ? Image.memory(_webImage!, height: 200, fit: BoxFit.cover)
+                    : _image != null
+                        ? Image.file(_image!, height: 200, fit: BoxFit.cover)
+                        : Container(),
               ),
             ],
+            
             if (_location != null) ...[
-              SizedBox(height: 16),
+              SizedBox(height: padding),
               Container(
                 padding: EdgeInsets.all(12),
                 decoration: BoxDecoration(
                   color: Colors.green[50],
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(12),
                   border: Border.all(color: Colors.green[200]!),
                 ),
                 child: Row(
@@ -499,10 +872,14 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
                 ),
               ),
             ],
+            
             SizedBox(height: 24),
+            
             ElevatedButton(
               onPressed: _loading ? null : _submitReport,
-              child: _loading ? CircularProgressIndicator() : Text('Submit Report'),
+              child: _loading 
+                  ? CircularProgressIndicator(color: Colors.white)
+                  : Text('Submit Report'),
               style: ElevatedButton.styleFrom(
                 minimumSize: Size(double.infinity, 50),
               ),
@@ -517,7 +894,18 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
     final picker = ImagePicker();
     final pickedFile = await picker.pickImage(source: ImageSource.camera);
     if (pickedFile != null) {
-      setState(() => _image = File(pickedFile.path));
+      if (kIsWeb) {
+        final bytes = await pickedFile.readAsBytes();
+        setState(() {
+          _webImage = bytes;
+          _image = null;
+        });
+      } else {
+        setState(() {
+          _image = File(pickedFile.path);
+          _webImage = null;
+        });
+      }
     }
   }
 
@@ -565,9 +953,16 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
     try {
       String? imageUrl;
       
-      // Upload image if exists
-      if (_image != null) {
-        final bytes = await _image!.readAsBytes();
+      if (_image != null || _webImage != null) {
+        Uint8List bytes;
+        if (kIsWeb && _webImage != null) {
+          bytes = _webImage!;
+        } else if (_image != null) {
+          bytes = await _image!.readAsBytes();
+        } else {
+          bytes = Uint8List(0);
+        }
+        
         final fileName = 'report_${DateTime.now().millisecondsSinceEpoch}.jpg';
         
         await Supabase.instance.client.storage
@@ -579,7 +974,6 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
             .getPublicUrl(fileName);
       }
 
-      // Insert report into database
       await Supabase.instance.client.from('reports').insert({
         'title': _titleController.text,
         'description': _descriptionController.text,
@@ -596,6 +990,8 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
         SnackBar(
           content: Text('Report submitted successfully!'),
           backgroundColor: Colors.green,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         ),
       );
 
@@ -604,12 +1000,17 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
       _descriptionController.clear();
       setState(() {
         _image = null;
+        _webImage = null;
         _location = null;
         _selectedCategory = 'Roads';
       });
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to submit report: $e')),
+        SnackBar(
+          content: Text('Failed to submit report: $e'),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        ),
       );
     }
 
@@ -621,17 +1022,23 @@ class MyReportsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final userId = Supabase.instance.client.auth.currentUser!.id;
+    final screenSize = MediaQuery.of(context).size;
+    final isTablet = screenSize.width > 600;
+    final padding = isTablet ? 24.0 : 16.0;
 
     return Padding(
-      padding: EdgeInsets.all(16),
+      padding: EdgeInsets.all(padding),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             'My Reports',
-            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+            style: TextStyle(
+              fontSize: isTablet ? 28 : 24,
+              fontWeight: FontWeight.bold,
+            ),
           ),
-          SizedBox(height: 16),
+          SizedBox(height: padding),
           Expanded(
             child: StreamBuilder<List<Map<String, dynamic>>>(
               stream: Supabase.instance.client
@@ -672,7 +1079,7 @@ class MyReportsScreen extends StatelessWidget {
                       margin: EdgeInsets.only(bottom: 12),
                       elevation: 2,
                       child: Padding(
-                        padding: EdgeInsets.all(16),
+                        padding: EdgeInsets.all(padding),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -682,7 +1089,10 @@ class MyReportsScreen extends StatelessWidget {
                                 Expanded(
                                   child: Text(
                                     report['title'] ?? '',
-                                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                                    style: TextStyle(
+                                      fontSize: isTablet ? 18 : 16,
+                                      fontWeight: FontWeight.bold,
+                                    ),
                                   ),
                                 ),
                                 _getStatusChip(report['status'] ?? 'submitted'),
@@ -691,7 +1101,10 @@ class MyReportsScreen extends StatelessWidget {
                             SizedBox(height: 8),
                             Text(
                               report['description'] ?? '',
-                              style: TextStyle(color: Colors.grey[700]),
+                              style: TextStyle(
+                                color: Colors.grey[700],
+                                fontSize: isTablet ? 16 : 14,
+                              ),
                             ),
                             SizedBox(height: 8),
                             Row(
@@ -714,7 +1127,7 @@ class MyReportsScreen extends StatelessWidget {
                             if (report['image_url'] != null) ...[
                               SizedBox(height: 12),
                               ClipRRect(
-                                borderRadius: BorderRadius.circular(8),
+                                borderRadius: BorderRadius.circular(12),
                                 child: Image.network(
                                   report['image_url'],
                                   height: 150,
@@ -723,10 +1136,15 @@ class MyReportsScreen extends StatelessWidget {
                                   errorBuilder: (context, error, stackTrace) {
                                     return Container(
                                       height: 150,
-                                      color: Colors.grey[300],
+                                      decoration: BoxDecoration(
+                                        color: Colors.grey[300],
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
                                       child: Center(
-                                        child: Icon(Icons.image_not_supported, 
-                                             color: Colors.grey[600]),
+                                        child: Icon(
+                                          Icons.image_not_supported,
+                                          color: Colors.grey[600],
+                                        ),
                                       ),
                                     );
                                   },
