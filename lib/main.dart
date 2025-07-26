@@ -111,13 +111,20 @@ class _SplashScreenState extends State<SplashScreen>
   Widget build(BuildContext context) {
     final screenSize = MediaQuery.of(context).size;
     final isTablet = screenSize.width > 600;
-    final isMobile = screenSize.width <= 600;
     
     return Scaffold(
       body: Container(
         width: double.infinity,
         height: double.infinity,
         decoration: BoxDecoration(
+          // Use your background image or fallback to gradient
+          image: DecorationImage(
+            image: AssetImage('assets/images/splashscreen background.jpg'),
+            fit: BoxFit.cover,
+            onError: (exception, stackTrace) {
+              // Fallback if image not found
+            },
+          ),
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
@@ -128,95 +135,137 @@ class _SplashScreenState extends State<SplashScreen>
             ],
           ),
         ),
-        child: SafeArea(
-          child: AnimatedBuilder(
-            animation: _animationController,
-            builder: (context, child) {
-              return FadeTransition(
-                opacity: _fadeAnimation,
-                child: ScaleTransition(
-                  scale: _scaleAnimation,
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      // Logo/Icon Container
-                      Container(
-                        width: isTablet ? 180 : 120,
-                        height: isTablet ? 180 : 120,
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          shape: BoxShape.circle,
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black26,
-                              blurRadius: 20,
-                              offset: Offset(0, 10),
+        child: Container(
+          // Dark overlay for better text visibility
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                Colors.black.withOpacity(0.3),
+                Colors.black.withOpacity(0.5),
+              ],
+            ),
+          ),
+          child: SafeArea(
+            child: AnimatedBuilder(
+              animation: _animationController,
+              builder: (context, child) {
+                return FadeTransition(
+                  opacity: _fadeAnimation,
+                  child: ScaleTransition(
+                    scale: _scaleAnimation,
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        // App Icon/Logo
+                        Container(
+                          width: isTablet ? 180 : 120,
+                          height: isTablet ? 180 : 120,
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black26,
+                                blurRadius: 20,
+                                offset: Offset(0, 10),
+                              ),
+                            ],
+                          ),
+                          child: ClipOval(
+                            child: Image.asset(
+                              'assets/images/app icon.jpg',
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) {
+                                return Icon(
+                                  Icons.location_city,
+                                  size: isTablet ? 80 : 60,
+                                  color: Color(0xFF008751),
+                                );
+                              },
                             ),
-                          ],
-                        ),
-                        child: Icon(
-                          Icons.location_city,
-                          size: isTablet ? 80 : 60,
-                          color: Color(0xFF008751),
-                        ),
-                      ),
-                      SizedBox(height: isTablet ? 40 : 30),
-                      
-                      // App Name
-                      Text(
-                        'FixMyStreet',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: isTablet ? 36 : 28,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 1.2,
-                        ),
-                      ),
-                      
-                      Text(
-                        'Lagos',
-                        style: TextStyle(
-                          color: Colors.white70,
-                          fontSize: isTablet ? 24 : 18,
-                          fontWeight: FontWeight.w300,
-                          letterSpacing: 2.0,
-                        ),
-                      ),
-                      
-                      SizedBox(height: isTablet ? 20 : 15),
-                      
-                      // Tagline
-                      Padding(
-                        padding: EdgeInsets.symmetric(
-                          horizontal: isTablet ? 80 : 40,
-                        ),
-                        child: Text(
-                          'Building Better Communities Together',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            color: Colors.white70,
-                            fontSize: isTablet ? 18 : 16,
-                            fontWeight: FontWeight.w400,
                           ),
                         ),
-                      ),
-                      
-                      SizedBox(height: isTablet ? 60 : 40),
-                      
-                      // Loading indicator
-                      SizedBox(
-                        width: isTablet ? 40 : 30,
-                        height: isTablet ? 40 : 30,
-                        child: CircularProgressIndicator(
-                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                          strokeWidth: 3,
+                        SizedBox(height: isTablet ? 40 : 30),
+                        
+                        // App Name
+                        Text(
+                          'FixMyStreet',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: isTablet ? 36 : 28,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 1.2,
+                            shadows: [
+                              Shadow(
+                                offset: Offset(2, 2),
+                                blurRadius: 4,
+                                color: Colors.black45,
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
-                    ],
+                        
+                        Text(
+                          'Lagos',
+                          style: TextStyle(
+                            color: Colors.white70,
+                            fontSize: isTablet ? 24 : 18,
+                            fontWeight: FontWeight.w300,
+                            letterSpacing: 2.0,
+                            shadows: [
+                              Shadow(
+                                offset: Offset(1, 1),
+                                blurRadius: 3,
+                                color: Colors.black45,
+                              ),
+                            ],
+                          ),
+                        ),
+                        
+                        SizedBox(height: isTablet ? 20 : 15),
+                        
+                        // Tagline
+                        Padding(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: isTablet ? 80 : 40,
+                          ),
+                          child: Text(
+                            'Building Better Communities Together',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: Colors.white70,
+                              fontSize: isTablet ? 18 : 16,
+                              fontWeight: FontWeight.w400,
+                              shadows: [
+                                Shadow(
+                                  offset: Offset(1, 1),
+                                  blurRadius: 3,
+                                  color: Colors.black45,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        
+                        SizedBox(height: isTablet ? 60 : 40),
+                        
+                        // Loading indicator
+                        SizedBox(
+                          width: isTablet ? 40 : 30,
+                          height: isTablet ? 40 : 30,
+                          child: CircularProgressIndicator(
+                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                            strokeWidth: 3,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-              );
-            },
+                );
+              },
+            ),
           ),
         ),
       ),
@@ -233,22 +282,31 @@ class AuthWrapper extends StatelessWidget {
         if (snapshot.hasData && snapshot.data?.session != null) {
           return HomePage();
         }
-        return LoginPage();
+        return AuthPage();
       },
     );
   }
 }
 
-class LoginPage extends StatefulWidget {
+class AuthPage extends StatefulWidget {
   @override
-  _LoginPageState createState() => _LoginPageState();
+  _AuthPageState createState() => _AuthPageState();
 }
 
-class _LoginPageState extends State<LoginPage> {
-  final TextEditingController _phoneController = TextEditingController();
-  final TextEditingController _otpController = TextEditingController();
-  bool _otpSent = false;
-  bool _loading = false;
+class _AuthPageState extends State<AuthPage> with SingleTickerProviderStateMixin {
+  late TabController _tabController;
+  
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 2, vsync: this);
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -299,10 +357,18 @@ class _LoginPageState extends State<LoginPage> {
                                 ),
                               ],
                             ),
-                            child: Icon(
-                              Icons.location_city,
-                              size: isTablet ? 50 : 40,
-                              color: Color(0xFF008751),
+                            child: ClipOval(
+                              child: Image.asset(
+                                'assets/images/app icon.jpg',
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) {
+                                  return Icon(
+                                    Icons.location_city,
+                                    size: isTablet ? 50 : 40,
+                                    color: Color(0xFF008751),
+                                  );
+                                },
+                              ),
                             ),
                           ),
                           
@@ -327,7 +393,7 @@ class _LoginPageState extends State<LoginPage> {
                           
                           SizedBox(height: isTablet ? 50 : 40),
                           
-                          // Login Form
+                          // Auth Container
                           Container(
                             constraints: BoxConstraints(
                               maxWidth: isTablet ? 400 : double.infinity,
@@ -346,61 +412,27 @@ class _LoginPageState extends State<LoginPage> {
                             ),
                             child: Column(
                               children: [
-                                if (!_otpSent) ...[
-                                  TextField(
-                                    controller: _phoneController,
-                                    decoration: InputDecoration(
-                                      labelText: 'Phone Number',
-                                      hintText: '+234xxxxxxxxxx',
-                                      prefixIcon: Icon(Icons.phone),
-                                      border: OutlineInputBorder(
-                                        borderRadius: BorderRadius.circular(12),
-                                      ),
-                                    ),
-                                    keyboardType: TextInputType.phone,
+                                TabBar(
+                                  controller: _tabController,
+                                  labelColor: Color(0xFF008751),
+                                  unselectedLabelColor: Colors.grey,
+                                  indicatorColor: Color(0xFF008751),
+                                  tabs: [
+                                    Tab(text: 'Email'),
+                                    Tab(text: 'Phone'),
+                                  ],
+                                ),
+                                SizedBox(height: 20),
+                                Container(
+                                  height: 400,
+                                  child: TabBarView(
+                                    controller: _tabController,
+                                    children: [
+                                      EmailAuthTab(),
+                                      PhoneAuthTab(),
+                                    ],
                                   ),
-                                  SizedBox(height: 20),
-                                  ElevatedButton(
-                                    onPressed: _loading ? null : _sendOTP,
-                                    child: _loading 
-                                        ? CircularProgressIndicator(color: Colors.white)
-                                        : Text('Send OTP'),
-                                    style: ElevatedButton.styleFrom(
-                                      minimumSize: Size(double.infinity, 50),
-                                    ),
-                                  ),
-                                ] else ...[
-                                  TextField(
-                                    controller: _otpController,
-                                    decoration: InputDecoration(
-                                      labelText: '6-Digit OTP',
-                                      prefixIcon: Icon(Icons.sms),
-                                      border: OutlineInputBorder(
-                                        borderRadius: BorderRadius.circular(12),
-                                      ),
-                                    ),
-                                    keyboardType: TextInputType.number,
-                                    maxLength: 6,
-                                  ),
-                                  SizedBox(height: 20),
-                                  ElevatedButton(
-                                    onPressed: _loading ? null : _verifyOTP,
-                                    child: _loading 
-                                        ? CircularProgressIndicator(color: Colors.white)
-                                        : Text('Verify OTP'),
-                                    style: ElevatedButton.styleFrom(
-                                      minimumSize: Size(double.infinity, 50),
-                                    ),
-                                  ),
-                                  TextButton(
-                                    onPressed: () => setState(() {
-                                      _otpSent = false;
-                                      _phoneController.clear();
-                                      _otpController.clear();
-                                    }),
-                                    child: Text('Change Phone Number'),
-                                  ),
-                                ],
+                                ),
                               ],
                             ),
                           ),
@@ -413,6 +445,269 @@ class _LoginPageState extends State<LoginPage> {
             },
           ),
         ),
+      ),
+    );
+  }
+}
+
+class EmailAuthTab extends StatefulWidget {
+  @override
+  _EmailAuthTabState createState() => _EmailAuthTabState();
+}
+
+class _EmailAuthTabState extends State<EmailAuthTab> {
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+  final TextEditingController _nameController = TextEditingController();
+  bool _isLogin = true;
+  bool _loading = false;
+  bool _obscurePassword = true;
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      child: Column(
+        children: [
+          if (!_isLogin) ...[
+            TextField(
+              controller: _nameController,
+              decoration: InputDecoration(
+                labelText: 'Full Name',
+                prefixIcon: Icon(Icons.person),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
+            SizedBox(height: 16),
+          ],
+          TextField(
+            controller: _emailController,
+            decoration: InputDecoration(
+              labelText: 'Email',
+              prefixIcon: Icon(Icons.email),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            keyboardType: TextInputType.emailAddress,
+          ),
+          SizedBox(height: 16),
+          TextField(
+            controller: _passwordController,
+            decoration: InputDecoration(
+              labelText: 'Password',
+              prefixIcon: Icon(Icons.lock),
+              suffixIcon: IconButton(
+                icon: Icon(_obscurePassword ? Icons.visibility : Icons.visibility_off),
+                onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+              ),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            obscureText: _obscurePassword,
+          ),
+          SizedBox(height: 20),
+          ElevatedButton(
+            onPressed: _loading ? null : _handleEmailAuth,
+            child: _loading 
+                ? CircularProgressIndicator(color: Colors.white)
+                : Text(_isLogin ? 'Sign In' : 'Sign Up'),
+            style: ElevatedButton.styleFrom(
+              minimumSize: Size(double.infinity, 50),
+            ),
+          ),
+          SizedBox(height: 16),
+          TextButton(
+            onPressed: () => setState(() => _isLogin = !_isLogin),
+            child: Text(
+              _isLogin 
+                  ? 'Don\'t have an account? Sign up' 
+                  : 'Already have an account? Sign in',
+              style: TextStyle(color: Color(0xFF008751)),
+            ),
+          ),
+          if (_isLogin) ...[
+            TextButton(
+              onPressed: _resetPassword,
+              child: Text(
+                'Forgot Password?',
+                style: TextStyle(color: Colors.grey[600]),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  void _handleEmailAuth() async {
+    final email = _emailController.text.trim();
+    final password = _passwordController.text.trim();
+    final name = _nameController.text.trim();
+
+    if (email.isEmpty || password.isEmpty) {
+      _showError('Please fill in all fields');
+      return;
+    }
+
+    if (!_isValidEmail(email)) {
+      _showError('Please enter a valid email address');
+      return;
+    }
+
+    if (password.length < 6) {
+      _showError('Password must be at least 6 characters');
+      return;
+    }
+
+    if (!_isLogin && name.isEmpty) {
+      _showError('Please enter your full name');
+      return;
+    }
+
+    setState(() => _loading = true);
+
+    try {
+      if (_isLogin) {
+        await Supabase.instance.client.auth.signInWithPassword(
+          email: email,
+          password: password,
+        );
+      } else {
+        final response = await Supabase.instance.client.auth.signUp(
+          email: email,
+          password: password,
+          data: {'full_name': name},
+        );
+        
+        if (response.user != null && response.user!.emailConfirmedAt == null) {
+          _showSuccess('Please check your email to confirm your account');
+        }
+      }
+    } catch (error) {
+      _showError(error.toString());
+    }
+
+    setState(() => _loading = false);
+  }
+
+  void _resetPassword() async {
+    final email = _emailController.text.trim();
+    
+    if (email.isEmpty) {
+      _showError('Please enter your email address first');
+      return;
+    }
+
+    try {
+      await Supabase.instance.client.auth.resetPasswordForEmail(email);
+      _showSuccess('Password reset email sent! Check your inbox.');
+    } catch (error) {
+      _showError('Failed to send password reset email');
+    }
+  }
+
+  bool _isValidEmail(String email) {
+    return RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(email);
+  }
+
+  void _showError(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.red,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      ),
+    );
+  }
+
+  void _showSuccess(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.green,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      ),
+    );
+  }
+}
+
+class PhoneAuthTab extends StatefulWidget {
+  @override
+  _PhoneAuthTabState createState() => _PhoneAuthTabState();
+}
+
+class _PhoneAuthTabState extends State<PhoneAuthTab> {
+  final TextEditingController _phoneController = TextEditingController();
+  final TextEditingController _otpController = TextEditingController();
+  bool _otpSent = false;
+  bool _loading = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      child: Column(
+        children: [
+          if (!_otpSent) ...[
+            TextField(
+              controller: _phoneController,
+              decoration: InputDecoration(
+                labelText: 'Phone Number',
+                hintText: '+234xxxxxxxxxx',
+                prefixIcon: Icon(Icons.phone),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              keyboardType: TextInputType.phone,
+            ),
+            SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: _loading ? null : _sendOTP,
+              child: _loading 
+                  ? CircularProgressIndicator(color: Colors.white)
+                  : Text('Send OTP'),
+              style: ElevatedButton.styleFrom(
+                minimumSize: Size(double.infinity, 50),
+              ),
+            ),
+          ] else ...[
+            TextField(
+              controller: _otpController,
+              decoration: InputDecoration(
+                labelText: '6-Digit OTP',
+                prefixIcon: Icon(Icons.sms),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              keyboardType: TextInputType.number,
+              maxLength: 6,
+            ),
+            SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: _loading ? null : _verifyOTP,
+              child: _loading 
+                  ? CircularProgressIndicator(color: Colors.white)
+                  : Text('Verify OTP'),
+              style: ElevatedButton.styleFrom(
+                minimumSize: Size(double.infinity, 50),
+              ),
+            ),
+            TextButton(
+              onPressed: () => setState(() {
+                _otpSent = false;
+                _phoneController.clear();
+                _otpController.clear();
+              }),
+              child: Text('Change Phone Number'),
+            ),
+          ],
+        ],
       ),
     );
   }
@@ -527,7 +822,20 @@ class _HomePageState extends State<HomePage> {
     
     return Scaffold(
       appBar: AppBar(
-        title: Text('FixMyStreet Lagos'),
+        title: Row(
+          children: [
+            Image.asset(
+              'assets/images/fav ico.jpg',
+              width: 24,
+              height: 24,
+              errorBuilder: (context, error, stackTrace) {
+                return Icon(Icons.location_city, size: 24);
+              },
+            ),
+            SizedBox(width: 8),
+            Text('FixMyStreet Lagos'),
+          ],
+        ),
         actions: [
           IconButton(
             icon: Icon(Icons.logout),
