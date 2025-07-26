@@ -35,8 +35,9 @@ jobs:
     - name: Build Web
       run: flutter build web --release
     
+    # Updated artifact upload step
     - name: Upload artifacts
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: flutter-builds
         path: |
