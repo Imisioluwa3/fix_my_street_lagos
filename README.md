@@ -1,89 +1,42 @@
-# Flutter Firebase App
+# Flutter Supabase "FixMyStreet" App
 
-A comprehensive Flutter application demonstrating Firebase integration with authentication and real-time data storage.
+A Flutter application for reporting local infrastructure issues, built with Supabase for the backend.
 
 ## Features
 
 ### 🔐 Authentication
-- **Email/Password Authentication**: Secure sign-up and login with email validation
-- **Phone Authentication**: SMS-based verification with international phone number support
-- **Password Reset**: Email-based password recovery
-- **Profile Management**: Update user profile information
-- **Account Linking**: Link phone numbers to existing email accounts
+- **Email/Password Authentication**: Secure sign-up and login.
+- **Phone Authentication**: SMS-based verification for user registration and login.
+- **Password Reset**: Email-based password recovery.
 
 ### 📱 Real-time Data Management
-- **CRUD Operations**: Create, read, update, and delete notes
-- **Real-time Sync**: Instant updates across all devices
-- **Search Functionality**: Search notes by title, content, or tags
-- **Tagging System**: Organize notes with custom tags
-- **Important Notes**: Mark notes as important for quick access
-- **Batch Operations**: Delete multiple notes at once
+- **CRUD Operations**: Create, read, and view issue reports.
+- **Real-time Sync**: Dashboard and "My Reports" screen update in real-time.
+- **Image Uploads**: Users can upload photos of issues to Supabase Storage.
+- **Geolocation**: Reports are tagged with the user's current location.
 
 ### 🎨 User Interface
-- **Material Design 3**: Modern, clean interface following Material Design guidelines
-- **Dark/Light Theme**: Automatic theme switching based on system preferences
-- **Responsive Design**: Optimized for different screen sizes
-- **Loading States**: Smooth loading animations and progress indicators
-- **Error Handling**: User-friendly error messages and validation
-
-### 🔒 Security
-- **Row Level Security**: Firestore security rules ensure users can only access their own data
-- **Input Validation**: Comprehensive form validation for all user inputs
-- **Secure Authentication**: Firebase Authentication with industry-standard security
-- **Data Encryption**: All data encrypted in transit and at rest
+- **Material Design**: Clean interface following Material Design guidelines.
+- **Responsive Design**: Optimized for different screen sizes (phones and tablets).
+- **Loading States**: Smooth loading animations and progress indicators.
+- **User-friendly Error Handling**: Clear error messages for auth and data operations.
 
 ## Project Structure
 
 ```
 lib/
-├── main.dart                 # App entry point
-├── firebase_options.dart     # Firebase configuration
-├── models/                   # Data models
-│   ├── user_model.dart
-│   └── note_model.dart
-├── services/                 # Business logic services
-│   ├── auth_service.dart
-│   └── firestore_service.dart
-├── providers/                # State management
-│   ├── auth_provider.dart
-│   └── data_provider.dart
-├── screens/                  # UI screens
-│   ├── auth/
-│   │   ├── login_screen.dart
-│   │   ├── signup_screen.dart
-│   │   ├── phone_auth_screen.dart
-│   │   ├── otp_verification_screen.dart
-│   │   └── forgot_password_screen.dart
-│   └── home/
-│       ├── home_screen.dart
-│       ├── add_edit_note_screen.dart
-│       ├── profile_screen.dart
-│       └── search_screen.dart
-├── widgets/                  # Reusable UI components
-│   ├── loading_overlay.dart
-│   ├── note_card.dart
-│   └── empty_state.dart
-└── utils/                    # Utilities and helpers
-    ├── app_theme.dart
-    └── validators.dart
+├── main.dart                 # App entry point and all screen/widget definitions
+test/
+├── widget_test.dart          # Basic widget test for the Auth screen
 ```
 
 ## Dependencies
 
 ### Core Dependencies
-- `firebase_core`: Firebase SDK core functionality
-- `firebase_auth`: Authentication services
-- `cloud_firestore`: NoSQL database
-- `provider`: State management solution
-
-### UI Dependencies
-- `google_fonts`: Custom fonts from Google Fonts
-- `loading_animation_widget`: Loading animations
-- `fluttertoast`: Toast notifications
-
-### Utility Dependencies
-- `email_validator`: Email validation
-- `connectivity_plus`: Network connectivity checking
+- `supabase_flutter`: Supabase SDK for authentication, database, and storage.
+- `image_picker`: For picking images from the camera or gallery.
+- `geolocator`: For fetching the user's location.
+- `flutter_dotenv`: For managing environment variables.
 
 ## Getting Started
 
@@ -91,14 +44,14 @@ lib/
 - Flutter SDK (3.0.0 or higher)
 - Dart SDK (3.0.0 or higher)
 - Android Studio or VS Code with Flutter extensions
-- Firebase account
+- A Supabase account
 
 ### Installation
 
 1. **Clone the repository**
    ```bash
    git clone <repository-url>
-   cd flutter_firebase_app
+   cd fix_my_street_lagos
    ```
 
 2. **Install dependencies**
@@ -106,249 +59,64 @@ lib/
    flutter pub get
    ```
 
-3. **Firebase Setup**
-   
-   Follow the detailed [Firebase Setup Guide](FIREBASE_SETUP.md) to:
-   - Create a Firebase project
-   - Configure authentication (email/password and phone)
-   - Set up Firestore database
-   - Configure platform-specific settings
+3. **Supabase Setup**
+   - Go to [Supabase](https://supabase.com/) and create a new project.
+   - In your Supabase project, navigate to the **SQL Editor**.
+   - Create a new query to set up the `reports` table:
+     ```sql
+     CREATE TABLE reports (
+       id bigint generated by default as identity primary key,
+       user_id uuid references auth.users not null,
+       created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+       title text,
+       description text,
+       category text,
+       image_url text,
+       latitude double precision,
+       longitude double precision,
+       status text
+     );
+     ```
+   - Enable Row Level Security (RLS) on the `reports` table and set up policies. For example, to allow users to see all reports but only manage their own:
+     ```sql
+     -- Enable RLS
+     ALTER TABLE public.reports ENABLE ROW LEVEL SECURITY;
 
-4. **Run the app**
+     -- Policy: Users can see all reports
+     CREATE POLICY "Allow all read access" ON public.reports
+       FOR SELECT USING (true);
+
+     -- Policy: Users can only insert reports for themselves
+     CREATE POLICY "Allow individual insert" ON public.reports
+       FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+     -- Policy: Users can only update their own reports
+     CREATE POLICY "Allow individual update" ON public.reports
+       FOR UPDATE USING (auth.uid() = user_id);
+
+     -- Policy: Users can only delete their own reports
+     CREATE POLICY "Allow individual delete" ON public.reports
+       FOR DELETE USING (auth.uid() = user_id);
+     ```
+   - Set up a storage bucket named `report-images` for user image uploads. Make it public or set up appropriate access policies.
+
+4. **Environment Variables**
+   - In the root of the project, create a file named `.env`.
+   - Add your Supabase URL and Anon Key to this file. You can find these in your Supabase project's **Settings > API**.
+     ```
+     SUPABASE_URL=YOUR_SUPABASE_URL
+     SUPABASE_ANON_KEY=YOUR_SUPABASE_ANON_KEY
+     ```
+   - **Important**: The `.env` file is listed in `.gitignore` and should not be committed to version control.
+
+5. **Run the app**
    ```bash
    flutter run
    ```
 
-## Firebase Configuration
-
-### Authentication Methods
-- **Email/Password**: Standard email-based authentication
-- **Phone**: SMS verification with international support
-- **Password Reset**: Email-based password recovery
-
-### Firestore Database Structure
-```
-users/
-├── {userId}/
-│   ├── uid: string
-│   ├── email: string
-│   ├── displayName: string?
-│   ├── phoneNumber: string?
-│   ├── photoURL: string?
-│   ├── createdAt: timestamp
-│   └── lastLoginAt: timestamp
-
-notes/
-├── {noteId}/
-│   ├── title: string
-│   ├── content: string
-│   ├── userId: string
-│   ├── createdAt: timestamp
-│   ├── updatedAt: timestamp
-│   ├── tags: array<string>
-│   └── isImportant: boolean
-```
-
-### Security Rules
-```javascript
-rules_version = '2';
-service cloud.firestore {
-  match /databases/{database}/documents {
-    // Users can only access their own user document
-    match /users/{userId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
-    }
-    
-    // Users can only access their own notes
-    match /notes/{noteId} {
-      allow read, write: if request.auth != null && 
-        request.auth.uid == resource.data.userId;
-      allow create: if request.auth != null && 
-        request.auth.uid == request.resource.data.userId;
-    }
-  }
-}
-```
-
-## Key Features Implementation
-
-### State Management
-The app uses Provider for state management with two main providers:
-- **AuthProvider**: Manages authentication state and user data
-- **DataProvider**: Handles note data and Firestore operations
-
-### Real-time Updates
-Firestore streams provide real-time updates:
-```dart
-Stream<List<NoteModel>> getUserNotes(String userId) {
-  return _notesCollection
-      .where('userId', isEqualTo: userId)
-      .orderBy('updatedAt', descending: true)
-      .snapshots()
-      .map((snapshot) => /* convert to NoteModel list */);
-}
-```
-
-### Form Validation
-Comprehensive validation for all user inputs:
-- Email format validation
-- Strong password requirements
-- Phone number format checking
-- Required field validation
-
-### Error Handling
-- Network connectivity checking
-- Firebase error code translation
-- User-friendly error messages
-- Graceful fallbacks for offline scenarios
-
 ## Testing
 
-### Unit Tests
-Run unit tests for business logic:
+Run the widget test to ensure the basic UI renders correctly:
 ```bash
 flutter test
 ```
-
-### Integration Tests
-Test complete user flows:
-```bash
-flutter test integration_test/
-```
-
-### Manual Testing Checklist
-- [ ] Email sign-up and login
-- [ ] Phone number verification
-- [ ] Password reset functionality
-- [ ] Note creation, editing, and deletion
-- [ ] Real-time synchronization
-- [ ] Search functionality
-- [ ] Offline behavior
-- [ ] Error handling scenarios
-
-## Deployment
-
-### Android
-1. Generate a signed APK:
-   ```bash
-   flutter build apk --release
-   ```
-
-2. Or build an App Bundle:
-   ```bash
-   flutter build appbundle --release
-   ```
-
-### iOS
-1. Build for iOS:
-   ```bash
-   flutter build ios --release
-   ```
-
-2. Archive and upload via Xcode
-
-### Web
-1. Build for web:
-   ```bash
-   flutter build web --release
-   ```
-
-2. Deploy to Firebase Hosting:
-   ```bash
-   firebase deploy --only hosting
-   ```
-
-## Performance Optimization
-
-### Implemented Optimizations
-- **Lazy Loading**: Notes loaded on-demand
-- **Image Optimization**: Efficient image loading and caching
-- **State Management**: Minimal rebuilds with Provider
-- **Database Indexing**: Optimized Firestore queries
-- **Code Splitting**: Modular architecture for better performance
-
-### Best Practices
-- Use `const` constructors where possible
-- Implement proper disposal of controllers and streams
-- Optimize Firestore queries with proper indexing
-- Use pagination for large datasets
-- Implement offline caching strategies
-
-## Security Considerations
-
-### Data Protection
-- All user data encrypted in transit and at rest
-- Firestore security rules prevent unauthorized access
-- Input validation prevents injection attacks
-- Secure authentication with Firebase Auth
-
-### Privacy
-- Minimal data collection
-- User consent for data processing
-- Secure data transmission
-- Regular security audits
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-### Code Style
-- Follow Dart/Flutter style guidelines
-- Use meaningful variable and function names
-- Add comments for complex logic
-- Maintain consistent formatting
-
-## Troubleshooting
-
-### Common Issues
-
-1. **Firebase not initialized**
-   - Ensure `Firebase.initializeApp()` is called in `main()`
-   - Check `firebase_options.dart` configuration
-
-2. **Phone authentication fails**
-   - Verify SHA fingerprints in Firebase Console
-   - Check Android minimum SDK version (21+)
-   - Ensure proper iOS configuration
-
-3. **Firestore permission denied**
-   - Check security rules
-   - Verify user authentication
-   - Ensure proper user ID matching
-
-### Debug Commands
-```bash
-# Clean build
-flutter clean && flutter pub get
-
-# Verbose logging
-flutter run --verbose
-
-# Check dependencies
-flutter doctor
-
-# Analyze code
-flutter analyze
-```
-
-## License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## Support
-
-For support and questions:
-- Check the [Firebase Setup Guide](FIREBASE_SETUP.md)
-- Review [Flutter documentation](https://flutter.dev/docs)
-- Visit [Firebase documentation](https://firebase.google.com/docs)
-
-## Acknowledgments
-
-- Flutter team for the amazing framework
-- Firebase team for the backend services
-- Material Design team for the design system
-- Open source community for the packages used
